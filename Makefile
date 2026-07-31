@@ -41,6 +41,12 @@ endef
 .clean_index:
 	rm -f $(WORK_INDEX)
 
+count:
+	find . -type f -regex '.*\.\(c\|h\)$$' -exec cat {} + | grep -v '^[[:space:]]*$$' | wc -l
+
+diff:
+	git diff d2f85ae9aed3070d954fb4d60331a5a044a1dcc8 --stat --ignore-blank-lines --ignore-space-change
+
 _default:
 	@echo "Please run 'make' under subprojects."
 

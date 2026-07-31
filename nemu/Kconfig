@@ -122,6 +122,15 @@ config CC_ASAN
   depends on MODE_SYSTEM
   bool "Enable address sanitizer"
   default n
+
+config WATCHPOINT
+  bool "Enable WatchPoint Check"
+  default n
+
+config EXPER_TEST
+  bool "Enable Test For Calculate Experssions"
+  default n
+
 endmenu
 
 menu "Testing and Debugging"
