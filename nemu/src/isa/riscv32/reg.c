@@ -24,7 +24,7 @@ const char *regs[] = {"$0", "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
 void isa_reg_display() {
   for (int i = 0; i < 32; i++) {
     // 每行四个寄存器，用制表符对齐
-    printf("%-6s 0x%08x  ", regs[i], gpr(i));
+    printf("%s: 0x%08x      ", regs[i], gpr(i));
     if ((i + 1) % 4 == 0)
       printf("\n");
   }

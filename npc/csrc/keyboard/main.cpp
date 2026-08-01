@@ -29,6 +29,10 @@ int main(int argc, char **argv) {
   // VerilatedFstC *tfp = new VerilatedFstC;
   // top.trace(tfp, 99); // Trace 99 levels of hierarchy
   // tfp->open("build/simx.fst");
+  top.reset = 1;
+  top.eval();
+  top.reset = 0;
+  top.eval();
   while (finish) {
     nvboard_update();
     single_cycle();

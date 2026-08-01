@@ -1,12 +1,13 @@
 module keyboard(
   input clk, reset, ps2_clk, ps2_data,
-  output reg [6:0] led0, led1, led2, led3,
+  output reg [6:0] led0, led1, led2, led3, led4, led5,
   output light
 );
   reg [9:0] buffer;        // ps2_data bits
   reg [3:0] count;  // count ps2_data bits
   reg [2:0] ps2_clk_sync;
   reg [7:0] history, selected, shift;
+  reg [7:0] count_num;
   always @(posedge clk) begin
       ps2_clk_sync <=  {ps2_clk_sync[1:0],ps2_clk};
   end
@@ -23,6 +24,7 @@ module keyboard(
           history <= 0;
           selected <= 0;
           shift <= 0;
+          count_num <= 0;
       end
       else begin
           if (sampling) begin
@@ -49,10 +51,14 @@ module keyboard(
           end
           else if(frame_done) begin
             if (buffer[8:1] == 8'h12 || buffer[8:1] == 8'h59) begin
+              if(shift == 0) count_num <= count_num + 1;
               shift <= buffer[8:1];
               if(selected == 0) selected <= buffer[8:1];
             end
-            else if(buffer[8:1] != 8'hF0) selected <= buffer[8:1];
+            else if(buffer[8:1] != 8'hF0) begin
+              if(selected != buffer[8:1]) count_num <= count_num + 1;
+              selected <= buffer[8:1];
+            end
           end
       end
   end
@@ -98,5 +104,14 @@ module keyboard(
     .sign(0),
     .h   (led3)
   );
-  
+  bcd7seg lcdseg4 (
+    .b   (count_num[3:0]),
+    .sign(0),
+    .h   (led4)
+  );
+  bcd7seg lcdseg5 (
+    .b   (count_num[7:4]),
+    .sign(0),
+    .h   (led5)
+  );
 endmodule
