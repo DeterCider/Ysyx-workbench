@@ -11,11 +11,11 @@ VSRC_Tools_FILES := $(shell find ./vsrc/tools/ -type f \( -name "*.v" -o -name "
 # 收集所有 .v/.sv
 CSRC_FILES := $(shell find $(CSRC_DIR) -type f \( -name "*.c" -o -name "*.cpp" \))
 VERILATOR_CFLAGS += -MMD --build -cc  \
-				-O3 --trace-fst -j 0  --exe
+				--trace-fst -j 0  --exe -O3
 NXDC_FILES = ./constr/$(PROJECT).nxdc
 #引脚约束文件
 INC_PATH ?=
-
+IMG ?=
 
 #输出目录
 OBJ_DIR ?= build
@@ -39,13 +39,16 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 
-all: clean $(OBJ_DIR)/V$(TOP_MODULE)
+all: $(OBJ_DIR)/V$(TOP_MODULE)
 $(OBJ_DIR)/V$(TOP_MODULE): $(CSRC_FILES) $(VSRC_FILES) $(NVBOARD_ARCHIVE) $(VSRC_Tools_FILES)
 	verilator $(VERILATOR_CFLAGS) $^\
 		--Mdir $(OBJ_DIR) \
 		--top-module $(TOP_MODULE) \
 		--build -o V$(TOP_MODULE) \
-		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \
+		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS))
+
+am-run: all
+	$(OBJ_DIR)/V$(TOP_MODULE) $(IMG)
 
 #NoNvBoard: $(CSRC_FILES) $(VSRC_FILES)
 #	verilator $(VERILATOR_CFLAGS) \

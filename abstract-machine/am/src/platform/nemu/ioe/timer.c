@@ -1,12 +1,30 @@
 #include <am.h>
 #include <nemu.h>
+#include <stdio.h>
 
-void __am_timer_init() {
+static uint64_t bt_time = 0;
+
+#define CLINT_MMIO 0xa0000000ul
+#define TIME_BASE 0x48
+
+static uint64_t read_time() {
+  uint32_t hi, lo;
+  do {
+      hi = *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 4);
+      lo = *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 0);
+  } while (hi != *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 4));
+  uint64_t time = ((uint64_t)hi << 32) | lo;
+  return time;
 }
 
 void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
-  uptime->us = 0;
+  uptime->us = read_time() - bt_time;
 }
+
+void __am_timer_init() {
+  bt_time = read_time();
+}
+
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
   rtc->second = 0;

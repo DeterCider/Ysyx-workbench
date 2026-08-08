@@ -7,14 +7,21 @@
 
 size_t numtostr(char *out, int num){
   size_t i = 0, j = 0, len = 0;
+  unsigned int abs  = 0;
   if(num < 0){
     out[i++] = '-';
-    num = -num;
+    abs = -(unsigned int)num;
     j = 1;
   }
-  while(num){
-    out[i++] = (num % 10) + '0';
-    num /= 10;
+  else if(num == 0){
+    out[i++] = '0';
+    out[i++] = '\0';
+    return 1;
+  }
+  else abs = (unsigned int) num;
+  while(abs){
+    out[i++] = (abs % 10) + '0';
+    abs /= 10;
   }
   out[i] = '\0';
   len = i;
@@ -28,17 +35,7 @@ size_t numtostr(char *out, int num){
   return len;
 }
 
-int printf(const char *fmt, ...) {
-  panic("Not implemented");
-}
-
-int vsprintf(char *out, const char *fmt, va_list ap) {
-  panic("Not implemented");
-}
-
-int sprintf(char *out, const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
+int format_to_buf(char *out, const char *fmt, va_list args){
   size_t i = 0, j = 0;
   while(fmt[i] != '\0'){
     if(fmt[i] == '%'){
@@ -59,6 +56,31 @@ int sprintf(char *out, const char *fmt, ...) {
     else out[j++] = fmt[i++];
   }
   out[j] = '\0';
+  return 0;
+}
+
+
+int printf(const char *fmt, ...) {
+  char buf[1000] = {};
+  va_list args;
+  va_start(args, fmt);
+  format_to_buf(buf, fmt, args);
+  for(int i = 0; buf[i] != '\0'; i++){
+    putch(buf[i]);
+    buf[i] = 0;
+  }
+  va_end(args);
+  return 0;
+}
+
+int vsprintf(char *out, const char *fmt, va_list ap) {
+  panic("Not implemented");
+}
+
+int sprintf(char *out, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  format_to_buf(out, fmt, args);
   va_end(args);
   return 0;
 }
