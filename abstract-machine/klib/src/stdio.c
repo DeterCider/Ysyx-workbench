@@ -35,7 +35,7 @@ size_t numtostr(char *out, int num){
   return len;
 }
 
-int format_to_buf(char *out, const char *fmt, va_list args){
+int vsprintf(char *out, const char *fmt, va_list args){
   size_t i = 0, j = 0;
   while(fmt[i] != '\0'){
     if(fmt[i] == '%'){
@@ -70,7 +70,7 @@ int printf(const char *fmt, ...) {
   char buf[1000] = {};
   va_list args;
   va_start(args, fmt);
-  format_to_buf(buf, fmt, args);
+  vsprintf(buf, fmt, args);
   for(int i = 0; buf[i] != '\0'; i++){
     putch(buf[i]);
     buf[i] = 0;
@@ -79,14 +79,10 @@ int printf(const char *fmt, ...) {
   return 0;
 }
 
-int vsprintf(char *out, const char *fmt, va_list ap) {
-  panic("Not implemented");
-}
-
 int sprintf(char *out, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  format_to_buf(out, fmt, args);
+  vsprintf(out, fmt, args);
   va_end(args);
   return 0;
 }

@@ -8,7 +8,7 @@
 
 void __am_input_keybrd(AM_INPUT_KEYBRD_T *kbd) {
   int k = AM_KEY_NONE;
-  k = *(volatile uint32_t *)(CLINT_MMIO + KEYBOARD_BASE);
+  k = inl(CLINT_MMIO + KEYBOARD_BASE);
   kbd->keydown = (k & KEYDOWN_MASK ? true : false);
   kbd->keycode = k & ~KEYDOWN_MASK;
 }

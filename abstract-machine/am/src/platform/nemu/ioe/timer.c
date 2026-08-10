@@ -10,8 +10,8 @@ static uint64_t bt_time = 0;
 static uint64_t read_time() {
   uint32_t hi, lo;
   do {
-      hi = *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 4);
-      lo = *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 0);
+      hi = inl(CLINT_MMIO + TIME_BASE + 4);
+      lo = inl(CLINT_MMIO + TIME_BASE + 0);
   } while (hi != *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 4));
   uint64_t time = ((uint64_t)hi << 32) | lo;
   return time;
