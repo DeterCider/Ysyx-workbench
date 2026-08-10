@@ -49,7 +49,7 @@ void new_wp(char exp[], int state) {
   WP *new_wp = free_;
   // delete from pool;
   free_ = free_->next;
-  strncpy(new_wp->expr, exp, sizeof(new_wp->expr));
+  snprintf(new_wp->expr, sizeof(new_wp->expr), "%s", exp);
   // add used wp;
   new_wp->oldstate = state;
   new_wp->next = head;
