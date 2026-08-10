@@ -62,14 +62,14 @@ void *memset(void *s, int c, size_t n) {
 
 void *memmove(void *dst, const void *src, size_t n) {
   unsigned char *d = (unsigned char *)dst;
-  const unsigned char *s= (const unsigned char *)src;
+  const unsigned char *s = (const unsigned char *)src;
   uintptr_t d_addr = (uintptr_t)d;
   uintptr_t s_addr = (uintptr_t)s;
   if(d_addr < s_addr){
     for(size_t i = 0; i < n; i++) d[i] = s[i];
   }
   else if(d_addr > s_addr){
-    for(size_t i = n-1; i >= 0; i--) d[i] = s[i];
+    for(size_t i = n; i > 0; i--) d[i-1] = s[i-1];
   }
   return dst;
 }

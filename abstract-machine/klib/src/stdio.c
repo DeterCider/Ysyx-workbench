@@ -52,6 +52,12 @@ int format_to_buf(char *out, const char *fmt, va_list args){
         j += strlen(str);
         i++;
       }
+      else if(fmt[i] == 'c'){
+        int str = va_arg(args, int);
+        out[j++] = str;
+        i++;
+      }
+      else panic("other function not complieted");
     }
     else out[j++] = fmt[i++];
   }
