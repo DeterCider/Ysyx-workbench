@@ -15,6 +15,7 @@
 
 #include <isa.h>
 #include <memory/paddr.h>
+#include <stdlib.h>
 
 void init_rand();
 void init_log(const char *log_file);
@@ -23,6 +24,7 @@ void init_difftest(char *ref_so_file, long img_size, int port);
 void init_device();
 void init_sdb();
 void init_disasm();
+void init_ibuf();
 
 static void welcome() {
   Log("Trace: %s", MUXDEF(CONFIG_TRACE, ANSI_FMT("ON", ANSI_FG_GREEN),
@@ -108,6 +110,7 @@ static int parse_args(int argc, char *argv[]) {
   }
   return 0;
 }
+
 
 void init_monitor(int argc, char *argv[]) {
   /* Perform some global initialization. */

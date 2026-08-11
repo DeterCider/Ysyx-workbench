@@ -14,24 +14,30 @@
  ***************************************************************************************/
 
 #include "../monitor/sdb/sdb.h"
+#include "common.h"
 #include "utils.h"
 #include <cpu/cpu.h>
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
-
+#include <stdio.h>
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
+#define MAX_IBUF_SIZE 10
+
+
+
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
-
+static IBuf ibuf[MAX_IBUF_SIZE] = {0};
+static int ibf_idx = 0;
 void device_update();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
@@ -52,6 +58,11 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
   if (g_print_step) {
     IFDEF(CONFIG_ITRACE, puts(_this->logbuf));
+    /*int number = MAX_IBUF_SIZE, i = ibf_idx;
+    while(number--){
+      if(ibuf[i].pc[0] != 0) printf("%-12.12s %-25.25s %s\n", ibuf[i].pc, ibuf[i].disas, ibuf[i].inst);
+      i = (i + 1) % MAX_IBUF_SIZE;
+    }*/
   }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 }
@@ -64,16 +75,20 @@ static void exec_once(Decode *s, vaddr_t pc) {
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
+  snprintf(ibuf[ibf_idx].pc, sizeof(ibuf[ibf_idx].pc), FMT_WORD ":",s->pc);
   int ilen = s->snpc - s->pc;
   int i;
   uint8_t *inst = (uint8_t *)&s->isa.inst;
 #ifdef CONFIG_ISA_x86
   for (i = 0; i < ilen; i++) {
 #else
+
+  char *start_p = p;
   for (i = ilen - 1; i >= 0; i--) {
 #endif
     p += snprintf(p, 4, " %02x", inst[i]);
   }
+  snprintf(ibuf[ibf_idx].inst, sizeof(ibuf[ibf_idx].inst), "%s", start_p);
   int ilen_max = MUXDEF(CONFIG_ISA_x86, 8, 4);
   int space_len = ilen_max - ilen;
   if (space_len < 0)
@@ -86,6 +101,9 @@ static void exec_once(Decode *s, vaddr_t pc) {
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
               MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst,
               ilen);
+  disassemble(ibuf[ibf_idx].disas, sizeof(ibuf[ibf_idx].disas),MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc),
+              (uint8_t *)&s->isa.inst, ilen);
+  ibf_idx = (ibf_idx + 1) % MAX_IBUF_SIZE;
 #endif
 }
 

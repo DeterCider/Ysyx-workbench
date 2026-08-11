@@ -28,6 +28,13 @@ typedef struct {
   uint32_t inst;
 } MUXDEF(CONFIG_RV64, riscv64_ISADecodeInfo, riscv32_ISADecodeInfo);
 
+//ibuf
+typedef struct iringbuf{
+  char pc[25];
+  char inst[25];
+  char disas[25];
+}IBuf;
+
 #define isa_mmu_check(vaddr, len, type) (MMU_DIRECT)
 
 #endif

@@ -160,6 +160,20 @@ config ITRACE_COND
   string "Only trace instructions when the condition is true"
   default "true"
 
+config MTRACE
+  depends on TRACE
+  bool "Enable memory read or write tracer"
+  default n
+
+config MTRACE_START
+  depends on MTRACE
+  hex "Only trace memory when the addr greater than this"
+  default 0x80000000
+
+config MTRACE_END
+  depends on MTRACE
+  hex "Only trace memory when the addr less than this"
+  default 0x87ffffff
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
