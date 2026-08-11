@@ -15,7 +15,9 @@
 
 #include <isa.h>
 #include <memory/paddr.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <ftrace.h>
 
 void init_rand();
 void init_log(const char *log_file);
@@ -48,6 +50,7 @@ static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static int difftest_port = 1234;
+static char *elf_file = NULL;
 
 static long load_img() {
   if (img_file == NULL) {
@@ -71,6 +74,29 @@ static long load_img() {
   return size;
 }
 
+#ifdef CONFIG_FTRACE
+static void load_elf() {
+  Assert(elf_file, "No elf file is given.");
+  FILE *fp = fopen(elf_file, "rb");
+  Assert(fp, "Can not open '%s'", elf_file);
+
+  fseek(fp, 0, SEEK_END);
+  long size = ftell(fp);
+  Log("The elf file is %s, size = %ld", elf_file, size);
+  fseek(fp, 0, SEEK_SET);
+
+  unsigned char *buf = malloc(size);
+  Assert(buf, "elf buf malloc failed");
+  int ret = fread(buf, 1, size, fp);
+  Assert(ret == size, "File loading incomplete");
+  fclose(fp);
+
+  init_ftrace(buf, size);   // 解析交给 utils，之后可安全释放
+  free(buf);
+}
+#endif
+
+
 static int parse_args(int argc, char *argv[]) {
   const struct option table[] = {
       {"batch", no_argument, NULL, 'b'},
@@ -78,10 +104,11 @@ static int parse_args(int argc, char *argv[]) {
       {"diff", required_argument, NULL, 'd'},
       {"port", required_argument, NULL, 'p'},
       {"help", no_argument, NULL, 'h'},
+      {"elf", required_argument, NULL, 'e'},
       {0, 0, NULL, 0},
   };
   int o;
-  while ((o = getopt_long(argc, argv, "-bhl:d:p:", table, NULL)) != -1) {
+  while ((o = getopt_long(argc, argv, "-bhl:d:p:e:", table, NULL)) != -1) {
     switch (o) {
     case 'b':
       sdb_set_batch_mode();
@@ -95,7 +122,10 @@ static int parse_args(int argc, char *argv[]) {
     case 'd':
       diff_so_file = optarg;
       break;
-    case 1:
+    case 'e':
+      elf_file = optarg;
+      break;
+    case 1:  //使用映像加载作为结尾参数
       img_file = optarg;
       return 0;
     default:
@@ -135,6 +165,9 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
+
+  /* load elf, analyse the symbol of function */
+  IFDEF(CONFIG_FTRACE, load_elf());
 
   /* Initialize differential testing. */
   init_difftest(diff_so_file, img_size, difftest_port);

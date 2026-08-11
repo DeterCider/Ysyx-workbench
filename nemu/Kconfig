@@ -175,6 +175,11 @@ config MTRACE_END
   hex "Only trace memory when the addr less than this"
   default 0x87ffffff
 
+config FTRACE
+  depends on TRACE
+  bool "Enable trace function"
+  default n
+
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
   bool "Enable differential testing"

@@ -4,15 +4,12 @@
 
 static uint64_t bt_time = 0;
 
-#define CLINT_MMIO 0xa0000000ul
-#define TIME_BASE 0x48
-
 static uint64_t read_time() {
   uint32_t hi, lo;
   do {
-      hi = inl(CLINT_MMIO + TIME_BASE + 4);
-      lo = inl(CLINT_MMIO + TIME_BASE + 0);
-  } while (hi != *(volatile uint32_t *)(CLINT_MMIO + TIME_BASE + 4));
+      hi = inl(RTC_ADDR + 4);
+      lo = inl(RTC_ADDR + 0);
+  } while (hi != inl(RTC_ADDR + 4));
   uint64_t time = ((uint64_t)hi << 32) | lo;
   return time;
 }
