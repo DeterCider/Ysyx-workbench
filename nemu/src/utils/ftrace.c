@@ -89,23 +89,25 @@ void init_ftrace(const uint8_t *buf, size_t size) {
     const uint8_t *s = buf + sym_off + (size_t)i * 0x10;
     if ((s[12] & 0x0f) != 2) continue;   // 只要 FUNC
     if (r16(s + 14) == 0) continue;      // 滤掉未定义引用
-    uint32_t value = r32(s + 4);
+    uint32_t value    = r32(s + 4);
     uint32_t name_off = r32(s + 0);
     if (value == 0 || name_off >= str_sz) continue;
     add_symbol(value, strtab + name_off);
   }
-  //地址单调有序后可使用二分查找(感觉写了没啥必要)
+  //地址单调有序后可使用二分查找
   qsort(funcs, nfuncs, sizeof(*funcs), cmp_addr);
   Log("ftrace: %d functions loaded", nfuncs);
 }
 
-const char *get_func_name(uint32_t addr) {
+const FuncSymbol *get_func_symbol(uint32_t addr) {
+  // 精确匹配函数入口，掩掉压缩指令标志位与建表时保持一致
+  addr &= ~1u;
   int l = 0, r = nfuncs - 1;
   while (l <= r) {
     int m = (l + r) / 2;
-    if (funcs[m].addr == addr) return funcs[m].name;
     if (funcs[m].addr < addr) l = m + 1;
-    else r = m - 1;
+    else if (funcs[m].addr > addr) r = m - 1;
+    else return &funcs[m];
   }
-  return NULL;
+  return NULL;   // addr 不是任何函数的入口
 }
