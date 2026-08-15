@@ -8,9 +8,9 @@ module LSU(
   output reg [31:0] odata
 );
 
-import "DPI-C" function int pmem_read(input int raddr);
+import "DPI-C" function int unsigned pmem_read(input int unsigned raddr);
 import "DPI-C" function void pmem_write(
-  input int waddr, input int wdata, input byte wmask);
+  input int unsigned waddr, input int unsigned wdata, input byte wmask);
 reg [31:0] rdata;
 always @(posedge clk) begin
   if (wen) begin // 有写请求时

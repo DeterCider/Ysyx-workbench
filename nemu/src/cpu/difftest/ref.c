@@ -13,21 +13,64 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
+#include <string.h>
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <difftest-def.h>
 #include <memory/paddr.h>
 
+static void diff_memcpy(paddr_t addr, void *buf, size_t n){
+  const char *dut = buf;
+  for(int i = 0; i < n; i++){
+    paddr_write(addr+i, 1, (word_t)*(dut+i));
+  }
+}
+
+static void diff_get_regs(void* diff_context) {
+  CPU_state* ctx = (CPU_state*)diff_context;
+  for (int i = 0; i < RISCV_GPR_NUM; i++) {
+    ctx->gpr[i] = cpu.gpr[i];
+  }
+  ctx->pc = cpu.pc;
+}
+
+static void diff_set_regs(void* diff_context) {
+  CPU_state* ctx = (CPU_state*)diff_context;
+  for (int i = 0; i < RISCV_GPR_NUM; i++) {
+    cpu.gpr[i] = ctx->gpr[i];
+  }
+  cpu.pc = ctx->pc;
+}
+
+
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  assert(0);
+  if (direction == DIFFTEST_TO_REF) {
+    diff_memcpy(addr, buf, n);
+  } else {
+    assert(0);
+  }
 }
 
 __EXPORT void difftest_regcpy(void *dut, bool direction) {
-  assert(0);
+  if (direction == DIFFTEST_TO_REF) {
+    diff_set_regs(dut);
+  } else {
+    diff_get_regs(dut);
+  }
+}
+
+__EXPORT bool difftest_memcmp(paddr_t addr, uint32_t data){
+  uint32_t now = paddr_read(addr, 4);
+  if(now == data) return true;
+  else{
+    printf("dut:%u ref:%u\n", data, now);
+    return false;
+  }
 }
 
 __EXPORT void difftest_exec(uint64_t n) {
-  assert(0);
+  cpu_exec(n);
 }
 
 __EXPORT void difftest_raise_intr(word_t NO) {

@@ -13,9 +13,11 @@ LDSCRIPTS += $(AM_HOME)/scripts/linker.ld
 LDFLAGS   += --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   += --gc-sections -e _start
 
+
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = the_insert-arg_rule_in_Makefile_will_insert_mainargs_here
 CFLAGS += -DMAINARGS_MAX_LEN=$(MAINARGS_MAX_LEN) -DMAINARGS_PLACEHOLDER=$(MAINARGS_PLACEHOLDER)
+NPCFLAGS += -b -l $(shell dirname $(IMAGE).elf)/npc-log.txt -e $(IMAGE).elf -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 
 insert-arg: image
 	@python $(AM_HOME)/tools/insert-arg.py $(IMAGE).bin $(MAINARGS_MAX_LEN) $(MAINARGS_PLACEHOLDER) "$(mainargs)"
@@ -26,5 +28,9 @@ image: image-dep
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 run: insert-arg
-	$(MAKE) -C $(NPC_HOME) am-run PROJECT=minirv IMG=$(IMAGE).bin
+	$(MAKE) -C $(NPC_HOME) am-run ARGS="$(NPCFLAGS)" PROJECT=minirv IMG=$(IMAGE).bin
+
+gdb: insert-arg
+	$(MAKE) -C $(NPC_HOME) gdb PROJECT=minirv IMG=$(IMAGE).bin
+
 .PHONY: insert-arg

@@ -12,9 +12,9 @@ module minirv(
 initial begin
     PC = 32'h8000_0000;
 end
-  import "DPI-C" function int pmem_read(input int raddr);
+  import "DPI-C" function int unsigned pmem_read(input int unsigned raddr);
   assign inst = pmem_read(PC);
-  
+ 
   RegisterFile #(
     .ADDR_WIDTH(4),
     .DATA_WIDTH(32)

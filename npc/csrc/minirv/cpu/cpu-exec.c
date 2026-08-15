@@ -1,23 +1,8 @@
-/***************************************************************************************
- * Copyright (c) 2014-2024 Zihao Yu, Nanjing University
- *
- * NEMU is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan
- *PSL v2. You may obtain a copy of Mulan PSL v2 at:
- *          http://license.coscl.org.cn/MulanPSL2
- *
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
- *KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
- *NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- *
- * See the Mulan PSL v2 for more details.
- ***************************************************************************************/
-
 #include "../monitor/sdb/sdb.h"
+#include <isa.h>
 #include "common.h"
 #include "utils.h"
 #include <cpu/cpu.h>
-#include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
 #include <stdio.h>
@@ -38,17 +23,15 @@ CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
-#ifdef CONFIG_ITRACE
 static IBuf ibuf[MAX_IBUF_SIZE] = {0};
 static int ibf_idx = 0;
-#endif
 
 #ifdef CONFIG_FTRACE
 static int func_cnt = -1;
 static FuncStack func_stack[MAX_FTRACE_STACK_SIZE] = {};
 // JAL/JALR 且 rd==0：不保存返回地址的跳转（j / jr），可能是尾调用
 static bool is_plain_jump(Decode *_this) {
-  uint32_t inst = _this->isa.inst;
+  uint32_t inst = _this->inst;
   if ((inst & 0x3) != 0x3) return false;   // 压缩指令（RVC 未启用，防御性检查）
   uint32_t opcode = inst & 0x7f;
   if (opcode != 0x6f && opcode != 0x67) return false;   // 不是 jal / jalr
@@ -67,9 +50,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   int state = check_watchpoint();
 
   if (state == 1)
-    nemu_state.state = NEMU_STOP;
+    npc_state.state = NPC_STOP;
   else if (state == -1)
-    nemu_state.state = NEMU_ABORT;
+    npc_state.state = NPC_ABORT;
 #endif
 #ifdef CONFIG_FTRACE
   if(_this->dnpc != _this->snpc){
@@ -127,7 +110,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   snprintf(ibuf[ibf_idx].pc, sizeof(ibuf[ibf_idx].pc), FMT_WORD ":",s->pc);
   int ilen = s->snpc - s->pc;
   int i;
-  uint8_t *inst = (uint8_t *)&s->isa.inst;
+  uint8_t *inst = (uint8_t *)&(s->inst);
 #ifdef CONFIG_ISA_x86
   for (i = 0; i < ilen; i++) {
 #else
@@ -148,10 +131,10 @@ static void exec_once(Decode *s, vaddr_t pc) {
 
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
-              MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst,
+              MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&(s->inst),
               ilen);
   disassemble(ibuf[ibf_idx].disas, sizeof(ibuf[ibf_idx].disas),MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc),
-              (uint8_t *)&s->isa.inst, ilen);
+              (uint8_t *)&(s->inst), ilen);
   ibf_idx = (ibf_idx + 1) % MAX_IBUF_SIZE;
 #endif
 }
@@ -162,7 +145,7 @@ static void execute(uint64_t n) {
     exec_once(&s, cpu.pc);
     g_nr_guest_inst++;
     trace_and_difftest(&s, cpu.pc);
-    if (nemu_state.state != NEMU_RUNNING)
+    if (npc_state.state != NPC_RUNNING)
       break;
     IFDEF(CONFIG_DEVICE, device_update());
   }
@@ -189,15 +172,15 @@ void assert_fail_msg() {
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
-  switch (nemu_state.state) {
-  case NEMU_END:
-  case NEMU_ABORT:
-  case NEMU_QUIT:
-    printf("Program execution has ended. To restart the program, exit NEMU and "
+  switch (npc_state.state) {
+  case NPC_END:
+  case NPC_ABORT:
+  case NPC_QUIT:
+    printf("Program execution has ended. To restart the program, exit NPC and "
            "run again.\n");
     return;
   default:
-    nemu_state.state = NEMU_RUNNING;
+    npc_state.state = NPC_RUNNING;
   }
 
   uint64_t timer_start = get_time();
@@ -207,22 +190,22 @@ void cpu_exec(uint64_t n) {
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;
 
-  switch (nemu_state.state) {
-  case NEMU_RUNNING:
-    nemu_state.state = NEMU_STOP;
+  switch (npc_state.state) {
+  case NPC_RUNNING:
+    npc_state.state = NPC_STOP;
     break;
 
-  case NEMU_END:
-  case NEMU_ABORT:
-    Log("nemu: %s at pc = " FMT_WORD,
-        (nemu_state.state == NEMU_ABORT
+  case NPC_END:
+  case NPC_ABORT:
+    Log("npc: %s at pc = " FMT_WORD,
+        (npc_state.state == NPC_ABORT
              ? ANSI_FMT("ABORT", ANSI_FG_RED)
-             : (nemu_state.halt_ret == 0
+             : (npc_state.halt_ret == 0
                     ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN)
                     : ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
-        nemu_state.halt_pc);
+        npc_state.halt_pc);
     // fall through
-  case NEMU_QUIT:
+  case NPC_QUIT:
     statistic();
   }
 }

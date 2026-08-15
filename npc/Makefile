@@ -9,16 +9,21 @@ VSRC_DIR  := ./vsrc/$(PROJECT)
 VSRC_FILES := $(shell find $(VSRC_DIR) -type f \( -name "*.v" -o -name "*.sv" \))
 VSRC_Tools_FILES := $(shell find ./vsrc/tools/ -type f \( -name "*.v" -o -name "*.sv" \)) 
 # 收集所有 .v/.sv
-CSRC_FILES := $(shell find $(CSRC_DIR) -type f \( -name "*.c" -o -name "*.cpp" \))
-VERILATOR_CFLAGS += -MMD --build -cc  \
-				--trace-fst -j 0  --exe -O3
+CSRC_FILES := $(shell find $(CSRC_DIR) -type f \( -name "*.c" -o -name "*.cpp" \) -not -path "$(CSRC_DIR)/tools/*")
+VERILATOR_CFLAGS += -MMD --build -cc --trace-fst -j 0  --exe -O3
 NXDC_FILES = ./constr/$(PROJECT).nxdc
 #引脚约束文件
 INC_PATH ?=
 IMG ?=
+ARGS ?=
 
 #输出目录
 OBJ_DIR ?= build
+SRCS-BLACKLIST ?=
+
+
+# bare make builds the project, not root count target
+.DEFAULT_GOAL := all
 
 include ../Makefile
 include $(NVBOARD_HOME)/scripts/nvboard.mk
@@ -27,6 +32,10 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOP_MODULE)\""
 
+
+PROJ_MK := $(CSRC_DIR)/Makefile
+
+ifeq ($(wildcard $(PROJ_MK)),)
 # constraint file
 SRC_AUTO_BIND = $(abspath $(OBJ_DIR)/auto_bind.cpp)
 $(SRC_AUTO_BIND): $(NXDC_FILES)
@@ -39,6 +48,7 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 
+
 all: $(OBJ_DIR)/V$(TOP_MODULE)
 $(OBJ_DIR)/V$(TOP_MODULE): $(CSRC_FILES) $(VSRC_FILES) $(NVBOARD_ARCHIVE) $(VSRC_Tools_FILES)
 	verilator $(VERILATOR_CFLAGS) $^\
@@ -48,7 +58,10 @@ $(OBJ_DIR)/V$(TOP_MODULE): $(CSRC_FILES) $(VSRC_FILES) $(NVBOARD_ARCHIVE) $(VSRC
 		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS))
 
 am-run: all
-	$(OBJ_DIR)/V$(TOP_MODULE) $(IMG)
+	$(OBJ_DIR)/V$(TOP_MODULE) -b $(IMG)
+
+gdb: all
+	gdb -s $(OBJ_DIR)/V$(TOP_MODULE) --args $(OBJ_DIR)/V$(TOP_MODULE) $(IMG)
 
 #NoNvBoard: $(CSRC_FILES) $(VSRC_FILES)
 #	verilator $(VERILATOR_CFLAGS) \
@@ -60,5 +73,14 @@ am-run: all
 sim: all
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	$(OBJ_DIR)/V$(TOP_MODULE)
+
+else
+
+export VERILATOR_CFLAGS TOP_MODULE ARGS
+all am-run gdb sim clean:
+	@echo "== npc: delegate PROJECT=$(PROJECT) to $(CSRC_DIR)/Makefile [$@] =="
+	@$(MAKE) -C $(CSRC_DIR) $@
+
+endif
 
 
