@@ -43,7 +43,6 @@ const char *isa_reg_val2str(int i);
 struct Decode;
 int isa_exec_once(struct Decode *s);
 
-// difftest（后续恢复 CONFIG_DIFFTEST 时使用）
 #define reg_name(i) isa_reg_str2val
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc);
 void isa_difftest_attach();

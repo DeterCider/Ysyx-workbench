@@ -57,14 +57,6 @@ void init_disasm() {
 	int ret = cs_open_dl(arch, mode, &handle);
   assert(ret == CS_ERR_OK);
 
-#ifdef CONFIG_ISA_x86
-  cs_err (*cs_option_dl)(csh handle, cs_opt_type type, size_t value) = NULL;
-  cs_option_dl = dlsym(dl_handle, "cs_option");
-  assert(cs_option_dl);
-
-  ret = cs_option_dl(handle, CS_OPT_SYNTAX, CS_OPT_SYNTAX_ATT);
-  assert(ret == CS_ERR_OK);
-#endif
 }
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte) {

@@ -4,7 +4,6 @@
 #define CONFIG_MSIZE 0x8000000
 #define CONFIG_CC_O2 1
 #define CONFIG_MODE_SYSTEM 1
-#define CONFIG_ITRACE 0
 #define CONFIG_TRACE_END 10000
 #define CONFIG_HAS_SERIAL 1
 #define CONFIG_ISA_riscv 1
@@ -29,21 +28,30 @@
 #define CONFIG_VGA_CTL_MMIO 0xa0000100
 #define CONFIG_I8042_DATA_MMIO 0x10000060 */
 
-//#define CONFIG_ITRACE_COND "true"
+// ---- SoC 外设 MMIO（与 AM 的 riscv32-npc 平台约定一致）----
+#define CLINT_MMIO   0x10000000u
+#define TIME_BASE    0x48u
+#define SERIAL_PORT  0x3f8u
+
+
+
+
 #define CONFIG_CC "gcc"
-#define CONFIG_TRACE_START 0
 #define CONFIG_DISK_IMG_PATH ""
 #define CONFIG_CC_GCC 1
-#define CONFIG_TRACE 1
 #define CONFIG_ISA "riscv32"
 #define CONFIG_PMEM_GARRAY 1
 
 
+
+#define CONFIG_TRACE 1
+#define CONFIG_LOG_WRITE 1
+#define CONFIG_TRACE_START 0
+//#define CONFIG_ITRACE 1
+//#define CONFIG_ITRACE_COND "true"
 //#define CONFIG_MTRACE 1
 //#define CONFIG_MTRACE_START 0x80000460
 //#define CONFIG_MTRACE_END 0x8fffffff
-
-
 //#define CONFIG_FTRACE 1
 
 #define CONFIG_DIFFTEST 1

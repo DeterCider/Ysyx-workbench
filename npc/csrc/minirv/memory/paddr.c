@@ -31,11 +31,6 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
   for (int i = 0; i < len; i++) p[i] = (data >> (8 * i)) & 0xff;
 }
 
-// ---- SoC 外设 MMIO（与 AM 的 riscv32-npc 平台约定一致）----
-#define CLINT_MMIO   0x10000000u
-#define TIME_BASE    0x48u
-#define SERIAL_PORT  0x3f8u
-
 word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
   if (addr == CLINT_MMIO + TIME_BASE)     return (word_t)(uint32_t)get_time();

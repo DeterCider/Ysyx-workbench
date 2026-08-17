@@ -13,7 +13,7 @@ module RegisterFile #(ADDR_WIDTH = 1, DATA_WIDTH = 1) (
   reg [DATA_WIDTH-1:0] rf [2**ADDR_WIDTH-1:0];
   integer i;
   initial begin
-      for (i = 0; i < 2**ADDR_WIDTH-1; i = i + 1) begin
+      for (i = 0; i < 2**ADDR_WIDTH; i = i + 1) begin
           rf[i] = 0;
       end
   end

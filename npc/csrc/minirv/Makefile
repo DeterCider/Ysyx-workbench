@@ -1,8 +1,8 @@
-CONFIG_ITRACE = y
+# CONFIG_ITRACE = y
 
 
 # Include all filelist.mk to merge file lists
-FILELIST_MK = $(shell find -L ./ -name "filelist.mk")
+FILELIST_MK = $(shell find -L ./ ../../vsrc/minirv -name "filelist.mk")
 include $(FILELIST_MK)
 
 SRCS-BLACKLIST ?=
@@ -13,6 +13,7 @@ CSRC := $(shell find . -type f \( -name "*.c" -o -name "*.cpp" \))
 CSRC := $(sort $(filter-out $(SRCS-BLACKLIST), $(CSRC)))
 
 VSRC := $(shell find ../../vsrc/minirv -type f \( -name "*.v" -o -name "*.sv" \))
+VSRC := $(sort $(filter-out $(SRCS-BLACKLIST), $(VSRC)))
 VSRC += $(shell find ../../vsrc/tools   -type f \( -name "*.v" -o -name "*.sv" \))
 
 CXXFLAGS := $(INCFLAGS) -DTOP_NAME="\"V$(TOP_MODULE)\""
@@ -23,10 +24,13 @@ CXXFLAGS += -I$(abspath ./tools/capstone/repo/include)  # disasm.c 的 capstone 
 LDFLAGS := -lreadline                             # sdb.c 的 readline
 OBJ_DIR ?= build
 
+# verilator 编译选项 (csrc 独立构建, 不继承 npc 根 Makefile)
+VERILATOR_CFLAGS ?= -MMD --build -cc --trace-fst -j 0 --exe -O3
+
 all: build/Vminirv
 
 $(OBJ_DIR)/Vminirv: $(VSRC) $(CSRC)
-	verilator $(VERILATOR_CFLAGS) $^ \
+	verilator $(VERILATOR_CFLAGS) -I../../vsrc/minirv $^ \
 		--Mdir $(OBJ_DIR) \
 		--top-module minirv \
 		--build -o Vminirv \
@@ -43,3 +47,5 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 .PHONY: all am-run clean gdb sim
+
+.DEFAULT_GOAL := all
